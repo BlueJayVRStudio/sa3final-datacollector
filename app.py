@@ -58,7 +58,7 @@ def echo_input():
 def get_some_string():
     return requests.get('https://api.ipify.org').content.decode('utf8')
 
-    return "successfully deployed automatically, just got back from running errands :D"
+    return "successfully deployed automatically, just got back from running errands :D. Also this is a new test statement"
 
 @app.route("/retrieve_id", methods=["GET"])
 def retrieve_id():
