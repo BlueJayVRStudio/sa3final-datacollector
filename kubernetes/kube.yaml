@@ -3,11 +3,19 @@ kind: Deployment
 metadata:
   annotations:
     autopilot.gke.io/resource-adjustment: >-
-      {"input":{"containers":[{"name":"github-bluejayvrstudio-sa3final-frontend-1"}]},"output":{"containers":[{"limits":{"cpu":"500m","ephemeral-storage":"1Gi","memory":"2Gi"},"requests":{"cpu":"500m","ephemeral-storage":"1Gi","memory":"2Gi"},"name":"github-bluejayvrstudio-sa3final-frontend-1"}]},"modified":true}
+      {"input":{"containers":[{"name":"github-bluejayvrstudio-sa3final-datacollector-1"}]},"output":{"containers":[{"limits":{"cpu":"500m","ephemeral-storage":"1Gi","memory":"2Gi"},"requests":{"cpu":"500m","ephemeral-storage":"1Gi","memory":"2Gi"},"name":"github-bluejayvrstudio-sa3final-datacollector-1"}]},"modified":true}
     autopilot.gke.io/warden-version: 2.7.41
   labels:
-    app: frontend
+    app: datacollector
   managedFields:
+    - apiVersion: apps/v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        'f:spec':
+          'f:replicas': {}
+      manager: vpa-recommender
+      operation: Update
+      subresource: scale
     - apiVersion: apps/v1
       fieldsType: FieldsV1
       fieldsV1:
@@ -17,7 +25,6 @@ metadata:
             'f:app': {}
         'f:spec':
           'f:progressDeadlineSeconds': {}
-          'f:replicas': {}
           'f:revisionHistoryLimit': {}
           'f:selector': {}
           'f:strategy':
@@ -33,7 +40,7 @@ metadata:
                 'f:app': {}
             'f:spec':
               'f:containers':
-                'k:{"name":"github-bluejayvrstudio-sa3final-frontend-1"}':
+                'k:{"name":"github-bluejayvrstudio-sa3final-datacollector-1"}':
                   .: {}
                   'f:env':
                     .: {}
@@ -74,7 +81,7 @@ metadata:
               'f:terminationGracePeriodSeconds': {}
       manager: GoogleCloudConsole
       operation: Update
-      time: '2023-10-07T04:17:09Z'
+      time: '2023-10-07T04:42:27Z'
     - apiVersion: apps/v1
       fieldsType: FieldsV1
       fieldsV1:
@@ -108,14 +115,14 @@ metadata:
       manager: kube-controller-manager
       operation: Update
       subresource: status
-      time: '2023-10-07T04:19:34Z'
-  name: frontend
+      time: '2023-10-07T04:53:43Z'
+  name: datacollector
   namespace: default
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
-      app: frontend
+      app: datacollector
   strategy:
     rollingUpdate:
       maxSurge: 25%
@@ -124,7 +131,7 @@ spec:
   template:
     metadata:
       labels:
-        app: frontend
+        app: datacollector
     spec:
       containers:
         - env:
@@ -132,25 +139,25 @@ spec:
               valueFrom:
                 configMapKeyRef:
                   key: POSTGRES_URL
-                  name: frontend-config-jvip
+                  name: datacollector-config-3qlj
             - name: POSTGRES_USER
               valueFrom:
                 configMapKeyRef:
                   key: POSTGRES_USER
-                  name: frontend-config-jvip
+                  name: datacollector-config-3qlj
             - name: POSTGRES_PW
               valueFrom:
                 configMapKeyRef:
                   key: POSTGRES_PW
-                  name: frontend-config-jvip
+                  name: datacollector-config-3qlj
             - name: POSTGRES_DB
               valueFrom:
                 configMapKeyRef:
                   key: POSTGRES_DB
-                  name: frontend-config-jvip
-          image: gcr.io/sa3capstone/github_bluejayvrstudio_sa3final-frontend
+                  name: datacollector-config-3qlj
+          image: gcr.io/sa3capstone/github_bluejayvrstudio_sa3final-datacollector
           imagePullPolicy: IfNotPresent
-          name: github-bluejayvrstudio-sa3final-frontend-1
+          name: github-bluejayvrstudio-sa3final-datacollector-1
           resources:
             limits:
               cpu: 500m
@@ -177,7 +184,7 @@ apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   labels:
-    app: frontend
+    app: datacollector
   managedFields:
     - apiVersion: autoscaling/v2
       fieldsType: FieldsV1
@@ -196,7 +203,7 @@ metadata:
             'f:name': {}
       manager: GoogleCloudConsole
       operation: Update
-      time: '2023-10-07T04:17:09Z'
+      time: '2023-10-07T04:42:27Z'
     - apiVersion: autoscaling/v2
       fieldsType: FieldsV1
       fieldsV1:
@@ -227,11 +234,12 @@ metadata:
           'f:currentMetrics': {}
           'f:currentReplicas': {}
           'f:desiredReplicas': {}
+          'f:lastScaleTime': {}
       manager: vpa-recommender
       operation: Update
       subresource: status
-      time: '2023-10-07T04:20:18Z'
-  name: frontend-hpa-m6ea
+      time: '2023-10-07T04:56:13Z'
+  name: datacollector-hpa-aiqa
   namespace: default
 spec:
   maxReplicas: 5
@@ -246,32 +254,30 @@ spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: frontend
+    name: datacollector
 ---
 apiVersion: v1
 kind: Service
 metadata:
   annotations:
     cloud.google.com/neg: '{"ingress":true}'
-  finalizers:
-    - service.kubernetes.io/load-balancer-cleanup
+  generateName: datacollector-
   labels:
-    app: frontend
+    app: datacollector
   managedFields:
     - apiVersion: v1
       fieldsType: FieldsV1
       fieldsV1:
         'f:metadata':
+          'f:generateName': {}
           'f:labels':
             .: {}
             'f:app': {}
         'f:spec':
-          'f:allocateLoadBalancerNodePorts': {}
-          'f:externalTrafficPolicy': {}
           'f:internalTrafficPolicy': {}
           'f:ports':
             .: {}
-            'k:{"port":80,"protocol":"TCP"}':
+            'k:{"port":5050,"protocol":"TCP"}':
               .: {}
               'f:port': {}
               'f:protocol': {}
@@ -281,52 +287,22 @@ metadata:
           'f:type': {}
       manager: GoogleCloudConsole
       operation: Update
-      time: '2023-10-06T23:52:36Z'
-    - apiVersion: v1
-      fieldsType: FieldsV1
-      fieldsV1:
-        'f:metadata':
-          'f:finalizers':
-            .: {}
-            'v:"service.kubernetes.io/load-balancer-cleanup"': {}
-        'f:status':
-          'f:loadBalancer':
-            'f:ingress': {}
-      manager: cloud-controller-manager
-      operation: Update
-      subresource: status
-      time: '2023-10-06T23:53:08Z'
-    - apiVersion: v1
-      fieldsType: FieldsV1
-      fieldsV1:
-        'f:metadata':
-          'f:annotations':
-            'f:gcb-build-id': {}
-            'f:gcb-trigger-id': {}
-            'f:kubectl.kubernetes.io/last-applied-configuration': {}
-          'f:labels':
-            'f:app.kubernetes.io/name': {}
-      manager: kubectl-client-side-apply
-      operation: Update
-      time: '2023-10-07T00:52:58Z'
-  name: frontend-service
+      time: '2023-10-07T04:54:21Z'
+  name: datacollector-zxthl
   namespace: default
 spec:
-  allocateLoadBalancerNodePorts: true
-  clusterIP: 34.118.236.249
+  clusterIP: 34.118.228.146
   clusterIPs:
-    - 34.118.236.249
-  externalTrafficPolicy: Cluster
+    - 34.118.228.146
   internalTrafficPolicy: Cluster
   ipFamilies:
     - IPv4
   ipFamilyPolicy: SingleStack
   ports:
-    - nodePort: 32326
-      port: 80
+    - port: 5050
       protocol: TCP
-      targetPort: 5000
+      targetPort: 5050
   selector:
-    app: frontend
+    app: datacollector
   sessionAffinity: None
-  type: LoadBalancer
+  type: ClusterIP
