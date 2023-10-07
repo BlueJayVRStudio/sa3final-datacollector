@@ -19,7 +19,7 @@ def someThreadedFunc():
     totalTime = 0
     print(totalTime)
     while (True):
-        if time.time()-currTime >= 10.0:
+        if time.time()-currTime >= 3600.0:
             currTime = time.time()
             totalTime += 1
             requests.get("http://127.0.0.1:5050/scrape")
