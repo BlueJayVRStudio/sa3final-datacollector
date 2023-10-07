@@ -4,11 +4,31 @@
 
 import os
 import requests
+import json
 from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text
 import psycopg2
 
+from threading import Thread
+import time
+
+
+def someThreadedFunc():
+    currTime = time.time()
+    totalTime = 0
+    print(totalTime)
+    while (True):
+        if time.time()-currTime >= 10.0:
+            currTime = time.time()
+            totalTime += 1
+            requests.get("http://127.0.0.1:5050/scrape")
+            print(totalTime)
+
+t1 = Thread(target=someThreadedFunc)
+t1.start()
+
+print("moving on!")
 
 def get_env_variable(name):
     try:
@@ -21,6 +41,8 @@ POSTGRES_URL = get_env_variable("POSTGRES_URL")
 POSTGRES_USER = get_env_variable("POSTGRES_USER")
 POSTGRES_PW = get_env_variable("POSTGRES_PW")
 POSTGRES_DB = get_env_variable("POSTGRES_DB")
+AIC_API = "https://api.artic.edu/api/v1/artworks"
+# AIC_IIIF = "https://www.artic.edu/iiif/2/{identifier}/full/843,/0/default.jpg"
 
 DB_URL = 'postgresql+psycopg2://{user}:{pw}@{url}/{db}'.format(user=POSTGRES_USER,pw=POSTGRES_PW,url=POSTGRES_URL,db=POSTGRES_DB)
 
@@ -34,55 +56,57 @@ db = SQLAlchemy(app)
 class Artpieces(db.Model):
     __tablename__ = 'artpieces'
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String, nullable=False)
+    image_id = db.Column(db.Text, nullable = True)
+    dimensions_detail = db.Column(db.Text, nullable = True)
 
-echoForm = '''
-    <p>Enter something here?????</p>
-     <form action="/echo_user_input" method="POST">
-         <input name="user_input">
-         <input type="submit" value="Submit!">
-     </form>
-     '''
+def ArtpiecesJson(rows):
+    tempList = []
+    for i in rows:
+        data = { 
+            'id': i.id,
+            'name': i.name,
+            'image_id': i.image_id,
+            'dimensions_detail': i.dimensions_detail
+        }
+        tempList.append(data)
+    return json.dumps(tempList)
 
-@app.route("/")
-def main():
-    return echoForm
-
-@app.route("/echo_user_input", methods=["POST"])
-def echo_input():
-    input_text = request.form.get("user_input", "")
-    return "You entered: " + input_text # + "\n" + echoForm
-
-@app.route("/test_string")
-def get_some_string():
-    # return requests.get('https://api.ipify.org').content.decode('utf8')
-
-    return "successfully deployed automatically, just got back from running errands :D. Also this is a new test statement"
-
-@app.route("/retrieve_id", methods=["GET"])
-def retrieve_id():
-    artworks = db.session.query(Artpieces).filter_by(name='testArtPiece').all()
-
-    id = None
-    name = None
-    for artwork in artworks:
-        print(artwork.id)
-        id = artwork.id
-        name = artwork.name
-
-    if id == None:
-        return "no record found :("
-
-    return str(id) + ", " + str(name)
-
-@app.route("/store_id", methods=["GET"])
-def store_id():
-    new_entry = Artpieces(id=531, name="testArtPiece")
-    db.session.add(new_entry)
+@app.route("/delete_records", methods=["GET"])
+def delete_records():
+    artworks = db.session.query(Artpieces).delete()
     db.session.commit()
-    return "stored!"
+    return "deleted!"
+
+@app.route("/scrape", methods=["GET"])
+def scrape():
+    # make an API call to The Art Institute of Chicago
+    response = requests.get(AIC_API)
+    loaded = json.loads(response.text)
+    data = loaded['data']
+
+    for row in data:
+        id = row['id']
+        name = row['title']
+        image_id = row['image_id']
+        dimensions_detail = json.dumps(row['dimensions_detail'])
+
+        artpiece = db.session.query(Artpieces).filter_by(id=id).first()
+        if artpiece is None:
+            new_entry = Artpieces(id=id, name=name, image_id=image_id, dimensions_detail=dimensions_detail)
+            db.session.add(new_entry)
+            db.session.commit()
+            # print("stored!")
+        else:
+            # print("already exists!")
+            pass
+
+    print("data scraped!")
+    return "data scraped!"
+    # return str(response.status_code) + "<br>" + json.dumps(data)
 
 if __name__ == "__main__":
-    print("hello")
+    print("hello world!")
     app.run(port=5050)
+    
