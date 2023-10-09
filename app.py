@@ -75,6 +75,7 @@ def ArtpiecesJson(rows):
 
 @app.route("/delete_records", methods=["GET"])
 def delete_records():
+    print("deleted!")
     artworks = db.session.query(Artpieces).delete()
     db.session.commit()
     return "deleted!"
