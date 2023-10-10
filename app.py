@@ -67,7 +67,7 @@ def someThreadedFunc():
     totalTime = 0
     print(totalTime)
     while (True):
-        if time.time()-currTime >= 3600.0:
+        if time.time()-currTime >= 1200.0:
             currTime = time.time()
             totalTime += 1
             requests.get("http://127.0.0.1:5050/scrape")
@@ -155,6 +155,9 @@ def scrape():
     print("data scraped!")
     return "data scraped!"
     # return str(response.status_code) + "<br>" + json.dumps(data)
+
+## MONITORING: start metrics endpoint server at port 9100
+start_http_server(9100)
 
 if __name__ == "__main__":
     print("hello world!")
