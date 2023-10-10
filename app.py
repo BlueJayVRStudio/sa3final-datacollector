@@ -17,7 +17,7 @@ import time
 
 ## EVENT COLLABORATION
 def create_rabbitmq_connection():
-    connection = pika.BlockingConnection(pika.ConnectionParameters(host='34.27.5.109'))
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host='34.118.234.233'))
     channel = connection.channel()
     channel.queue_declare(queue='scrape_signal')
     return (connection, channel)
