@@ -5,6 +5,7 @@
 import os
 import requests
 import json
+import pika, sys
 from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text
@@ -13,6 +14,48 @@ import psycopg2
 from threading import Thread
 import time
 
+
+## EVENT COLLABORATION
+def create_rabbitmq_connection():
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host='34.27.5.109'))
+    channel = connection.channel()
+    channel.queue_declare(queue='scrape_signal')
+    return (connection, channel)
+## EVENT COLLABORATION: try to connect to rabbitmq 3 times. Sleep for 5 seconds if not available.
+connection = None
+channel = None
+success = False
+for i in range(3):
+    try:
+        connection, channel = create_rabbitmq_connection()
+        success = True
+    except:
+        time.sleep(5)
+
+    if success:
+        break
+print(success)
+
+def callback(ch, method, properties, body):
+    body = json.loads(body)
+    print(body)
+    if (body == "scrape signal"):
+        requests.get("http://localhost:5050/scrape")
+    elif (body == "delete signal"):
+        requests.get("http://localhost:5050/delete_records")
+    # print("hello world! RabbitMQ consumption working :D Very satisfied with the outcome")
+
+def some_print_func():
+    print("hello world! RabbitMQ consumption working :D Very satisfied with the outcome")
+
+if success:
+    def rabbit_thread(channel):
+        channel.basic_consume(queue='scrape_signal', on_message_callback=callback, auto_ack=True)
+        channel.start_consuming()
+
+    t2 = Thread(target=rabbit_thread, args=(channel,))
+    t2.start()
+    
 
 def someThreadedFunc():
     currTime = time.time()
