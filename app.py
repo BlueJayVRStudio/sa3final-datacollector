@@ -14,6 +14,11 @@ import psycopg2
 from threading import Thread
 import time
 
+from prometheus_client import start_http_server, Summary, Counter, Gauge
+
+## MONITORING: prometheus metrics
+c = Counter('http_scrape_request_datacollector', 'counter for http request to scrape data, data collector side')
+
 
 ## EVENT COLLABORATION
 def create_rabbitmq_connection():
@@ -126,6 +131,7 @@ def delete_records():
 @app.route("/scrape", methods=["GET"])
 def scrape():
     # make an API call to The Art Institute of Chicago
+    c.inc()
     response = requests.get(AIC_API)
     loaded = json.loads(response.text)
     data = loaded['data']
